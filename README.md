@@ -3,3 +3,4 @@ g++ main.cpp -fopenmp
 
 ### Implemented:
 1. add
+2. eigvals
