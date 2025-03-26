@@ -1,2 +1,5 @@
+Simply compile main.cpp using 
+g++ main.cpp -fopenmp
+
 ### Implemented:
-1. dot
+1. add
