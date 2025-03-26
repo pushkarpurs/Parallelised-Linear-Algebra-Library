@@ -1,2 +1,2 @@
-#Implemented:
+# Implemented:
 1. dot
