@@ -24,6 +24,7 @@ class LinAlg
         created_arrays.push_back(std::move(newArray));
 		
 		//Uncecessary to spawn threads for smaller matrices. Threading overhead dominates and SIMD is better
+		//Note SIMD is an intra processor instruction. Bascially a vector instruction, but omp paralell is inter processor spawning multiple threads
 		if(rows*cols <=128)
 		{
 			#pragma omp simd
@@ -44,15 +45,28 @@ class LinAlg
 		return sumptr;
 	}
 	
-	// template <typename T>
-	// double dot(const  T* a, const T* b, int rows, int cols)
-	// {
-		// auto newArray = std::make_unique<double[]>(rows * cols);
-        // double* sumptr = newArray.get();
-        // created_arrays.push_back(std::move(newArray));
-		
-		// for 
-	// }
+	template <typename T>
+	double dot(const  T* a, const T* b, int rows, int cols)
+	{	
+		double s=0.0;
+		if(rows*cols <=128)
+		{
+			#pragma omp simd
+			for(int i=0; i<rows*cols; i++)
+			{
+				s+=a[i]*b[i];
+			}
+		}
+		else
+		{
+			#pragma omp parallel for reduction(+:s)
+			for(int i=0; i<rows*cols; i++)
+			{
+				s+=a[i]*b[i];
+			}
+		}
+		return s;
+	}
 };
 
 #endif

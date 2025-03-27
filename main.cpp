@@ -15,6 +15,7 @@ int main()
         std::cout << result[i] << " ";
         if ((i + 1) % 2 == 0) std::cout << std::endl;
     }
-
+	double dt=linalg.dot(A,B,2,2);
+	std::cout<<"Dot product = "<<dt<<std::endl;
     return 0;
 }
