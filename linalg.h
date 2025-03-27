@@ -43,6 +43,16 @@ class LinAlg
 			
 		return sumptr;
 	}
+	
+	// template <typename T>
+	// double dot(const  T* a, const T* b, int rows, int cols)
+	// {
+		// auto newArray = std::make_unique<double[]>(rows * cols);
+        // double* sumptr = newArray.get();
+        // created_arrays.push_back(std::move(newArray));
+		
+		// for 
+	// }
 };
 
 #endif
