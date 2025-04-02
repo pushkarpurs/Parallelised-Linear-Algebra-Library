@@ -18,6 +18,7 @@ class LinAlg
 	template <typename T>
 	double* add(const T* a, const T* b, int rows, int cols)
 	{
+		
 		//The below portion will be similar for all functions. Rename the double* sumptr to the name of the operation it is being used for
 		auto newArray = std::make_unique<double[]>(rows * cols);
         double* sumptr = newArray.get();
@@ -48,11 +49,16 @@ class LinAlg
 	template <typename T>
 	double dot(const  T* a, const T* b, int rows, int cols)
 	{	
+		if(cols!=1)
+		{
+			std::cout<<"ERROR: Dot product can only be computed for vectors. Matrices unsupported. Use matmul"<<std::endl;
+			return NaN;
+		}
 		double s=0.0;
-		if(rows*cols <=128)
+		if(rows<=128)
 		{
 			#pragma omp simd
-			for(int i=0; i<rows*cols; i++)
+			for(int i=0; i<rows; i++)
 			{
 				s+=a[i]*b[i];
 			}
@@ -60,12 +66,25 @@ class LinAlg
 		else
 		{
 			#pragma omp parallel for reduction(+:s)
-			for(int i=0; i<rows*cols; i++)
+			for(int i=0; i<rows; i++)
 			{
 				s+=a[i]*b[i];
 			}
 		}
 		return s;
+	}
+	
+	template <typename T>
+	double* matmul(const  T* a, const T* b, int rowsa, int colsa, int rowsb, int colsb)
+	{
+		if(colsa!=rowsb)
+		{
+			std::cout<<"Error: Mismatch of matrix dimentions"<<std::endl;
+			return nullptr;
+		}
+		auto newArray = std::make_unique<double[]>(rows * cols);
+        double* matmul = newArray.get();
+        created_arrays.push_back(std::move(newArray));
 	}
 };
 
