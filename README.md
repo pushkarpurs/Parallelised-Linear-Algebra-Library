@@ -5,4 +5,5 @@ g++ main.cpp -fopenmp
 1. add  
 2. eigvals  
 3. dot  
-4. matmul  
+4. matmul
+5. matrix_power  
