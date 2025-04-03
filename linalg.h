@@ -86,6 +86,92 @@ class LinAlg
         double* matmul = newArray.get();
         created_arrays.push_back(std::move(newArray));
 	}
+
+	
+    	// Matrix multiplication
+	template <typename T>
+	double* multiply(const T* a, const T* b, int rows, int cols) {
+		auto newArray = std::make_unique<double[]>(rows * cols);
+		double* resultptr = newArray.get();
+		
+		const int threshold = 64;
+		if(rows < threshold) {
+		    for(int i = 0; i < rows; i++) {
+			for(int j = 0; j < cols; j++) {
+			    double sum = 0;
+			    #pragma omp simd reduction(+:sum)
+			    for(int k = 0; k < cols; k++) {
+				sum += a[i*cols + k] * b[k*cols + j];
+			    }
+			    resultptr[i*cols + j] = sum;
+			}
+		    }
+		}
+		else {
+		    //collapse(2) only if the number of threads is more than the number of rows in the matrix and for matrices of size >= 64
+		    #pragma omp parallel for collapse(2) 
+		    for(int i = 0; i < rows; i++) {
+			for(int j = 0; j < cols; j++) {
+			    double sum = 0;
+			    #pragma omp simd reduction(+:sum)
+			    for(int k = 0; k < cols; k++) {
+				sum += a[i*cols + k] * b[k*cols + j];
+			    }
+			    resultptr[i*cols + j] = sum;
+			}
+		    }
+		}
+		
+		    created_arrays.push_back(std::move(newArray));
+		return resultptr;
+	}
+	    
+    	// Creating identity matrix for base case (exponent == 0)
+    	double* identity(int size) {
+		if (size <= 64) {  
+	    		#pragma omp simd
+	    		for (int i = 0; i < size * size; i++) {
+				idptr[i] = (i / size == i % size) ? 1.0 : 0.0;
+	    		}
+		} 
+		else {  
+	    		#pragma omp parallel for
+	    		for (int i = 0; i < size * size; i++) {
+				idptr[i] = (i / size == i % size) ? 1.0 : 0.0;
+	    		}
+		}
+	
+		return idptr;
+	}
+    
+    
+   	 // Using binary exponentiation for reducing number of matrix multiplications
+	template <typename T>
+	double* power(const T* matrix, int size, int exponent) {
+		if(exponent == 0) {
+			double* idMatrix = identity(size); 
+		   	created_arrays.push_back(std::unique_ptr<double[]>(idMatrix)); 
+		   	return idMatrix;
+		}
+		
+		if(exponent == 1) {
+		    	double* originalMatrix = matrix;          
+		    	created_arrays.push_back(std::unique_ptr<double[]>(originalMatrix));
+		    	return originalMatrix;
+		}
+		
+		if(exponent % 2 == 0) {
+		   	double* half = power(matrix, size, exponent / 2);
+		   	return multiply(half, half, size, size);
+			delete[] half;
+		} else {
+		    	double* powMinusOne = power(matrix, size, exponent - 1);
+		    	return multiply(matrix, powMinusOne, size, size);
+			delete[] powMinusOne;
+		}
+	}
+
+    
 };
 
 #endif
