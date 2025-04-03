@@ -137,6 +137,8 @@ class LinAlg
     	// Creating identity matrix for base case (exponent == 0)
     	double* identity(int size) 
 	{
+		auto newArray = std::make_unique<double[]>(rows * cols);
+		double* idptr = newArray.get();
 		if (size <= 64) 
 		{  
 	    		#pragma omp simd
