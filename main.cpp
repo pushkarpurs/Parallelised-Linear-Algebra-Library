@@ -26,7 +26,7 @@ int main()
         	return 1;
             }
     */
-    double* matpow = linalg.power(A, n);
+    double* matpow = linalg.power(A, 2, n);
     std::cout << "Matrix Power Result:\n";
     for (int i = 0; i < 4; i++)
     {
