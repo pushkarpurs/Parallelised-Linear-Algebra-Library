@@ -261,5 +261,38 @@ class LinAlg
 		}
 		return opr;
 	}
+	
+	template <std::size_t rows,typename T, std::size_t cols>
+	double (*transpose(const T (*a)[cols]))[rows]
+	{
+		auto newArray = std::make_unique<double[]>(rows * cols);
+        double* res = newArray.get();
+        created_arrays.push_back(std::move(newArray));
+		double (*transp)[cols] = reinterpret_cast<double (*)[cols]>(res);
+		
+		if(rows*cols <=256)
+		{
+			for(int i=0; i<rows;i++)
+			{
+				#pragma omp simd
+				for(int j=0;j<cols;j++)
+				{
+					transp[j][i]=a[i][j];
+				}
+			}
+		}
+		else
+		{
+			#pragma omp parallel for collapse(2) schedule(static)
+			for(int i=0; i<rows*cols;i++)
+			{
+				for(int j=0; j<cols; j++)
+				{
+					transp[j][i]=a[i][j];
+				}
+			}
+		}
+		return transp;
+	}
 };
 #endif

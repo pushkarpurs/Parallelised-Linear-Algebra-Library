@@ -79,5 +79,15 @@ int main()
 		std::cout << std::endl;
     }
 	
+	double (*tp)[2]= linalg.transpose<2>(A);
+	std::cout << "Transpose of a Matrix Result:\n";
+    for (int i = 0; i < 2; i++)
+    {
+		for (int j=0; j<2; j++)
+		{
+			std::cout << tp[i][j] << " ";
+		}
+		std::cout << std::endl;
+    }
     return 0;
 }
