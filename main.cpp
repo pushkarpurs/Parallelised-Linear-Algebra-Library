@@ -1,5 +1,4 @@
 //This main file is just to test out the written functions. Ensure the library works as intended
-#include <iostream>
 #include "linalg.h"
 
 int main()
@@ -107,5 +106,26 @@ int main()
     {
 		std::cout << mtv[i] << " ";
     }
+	std::cout<<std::endl;
+	double H[5][5] = {
+    {25, 15, -5, 10, 20},
+    {15, 18,  0,  8, 12},
+    {-5,  0, 11,  3,  2},
+    {10,  8,  3, 20,  5},
+    {20, 12,  2,  5, 30}};
+	
+	double I[3][3]= {{4,12,-16},{12,37,-43},{-16,-43,98}};
+	
+	double (*chl)[5]=linalg.cholesky(H);
+	std::cout << "Cholesky decomposition of a Matrix Result:\n";
+    for (int i = 0; i <5; i++)
+    {
+		for (int j=0; j<5; j++)
+		{
+			std::cout << chl[i][j] << " ";
+		}
+		std::cout << std::endl;
+    }
+	
     return 0;
 }

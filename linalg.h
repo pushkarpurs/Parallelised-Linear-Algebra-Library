@@ -4,6 +4,9 @@
 #include <vector>
 #include <memory>
 #include <omp.h>
+#include <cmath>
+#include <iostream>
+#include <atomic>
 
 
 //the number of rows or columns must be provided (depends on the function requirements) as this cant be inferred from the passed pointer. 
@@ -313,7 +316,7 @@ class LinAlg
 		}
 		else
 		{
-			#pragma omp paralell schedule(static)
+			#pragma omp parallel for schedule(static)
 			for(int j=0; j<rows; j++)
 			{
 				for(int i=0; i<cols;i++)
@@ -345,7 +348,7 @@ class LinAlg
 		}
 		else
 		{
-			#pragma omp paralell schedule(static)
+			#pragma omp parallel for schedule(static)
 			for(int j=0; j<rows; j++)
 			{
 				for(int i=0; i<cols;i++)
@@ -355,6 +358,77 @@ class LinAlg
 			}
 		}
 		return matv;
+	}
+	
+	//Assumes passed matrix is square
+	template <typename T, std::size_t cols>
+	double (*cholesky(const T (*a)[cols]))[cols]
+	{
+		std::atomic<bool> r{false};
+		#pragma omp parallel for schedule(static) shared(r)
+		for(int i=0; i<cols; i++)
+		{
+			if(r.load())
+				continue;
+			for(int j=i+1; j<cols; j++)
+			{
+				if(a[i][j]!=a[j][i])
+				{
+					r.store(true);
+				}
+			}
+		}
+		if(r.load())
+		{
+			std::cout<<"Error: The matrix is not symmetric"<<std::endl;
+			return nullptr;
+		}
+		r.store(false);
+		auto newArray = std::make_unique<double[]>(cols*cols);
+		std::fill_n(newArray.get(), cols * cols, 0.0);
+        double* res = newArray.get();
+		double (*L)[cols] = reinterpret_cast<double (*)[cols]>(res);
+		
+		for (int i=0; i<cols; i++) 
+		{
+			double sum= 0.0;
+			for (int k=0;k<i; k++)
+			{
+				sum+=L[i][k]*L[i][k];
+			}
+			if(a[i][i]-sum<0)
+			{
+				std::cout<<"Error: The matrix is not positive definite"<<std::endl;
+				return nullptr;
+			}
+			L[i][i]=std::sqrt(a[i][i]-sum);
+
+			#pragma omp parallel for
+			for (int j=i+1; j<cols; j++) 
+			{
+				if(r.load())
+					continue;
+				double sum = 0.0;
+				for (int k = 0; k< i; k++)
+				{
+					sum+= L[j][k]*L[i][k];
+				}
+				if(L[i][i]==0)
+				{
+					r.store(true);
+					continue;
+				}
+				L[j][i] =(a[j][i]-sum)/L[i][i];
+			}
+			
+			if(r.load())
+			{
+				std::cout<<"Error: The matrix is not positive definite"<<std::endl;
+				return nullptr;
+			}
+		}
+		created_arrays.push_back(std::move(newArray));
+		return L;
 	}
 };
 #endif
