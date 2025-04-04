@@ -68,5 +68,16 @@ int main()
 		std::cout << std::endl;
     }
 	
+	double (*otr)[4]= linalg.outer<4>(C, D);
+	std::cout << "Vector Outer Product Result:\n";
+    for (int i = 0; i < 4; i++)
+    {
+		for (int j=0; j<4; j++)
+		{
+			std::cout << otr[i][j] << " ";
+		}
+		std::cout << std::endl;
+    }
+	
     return 0;
 }

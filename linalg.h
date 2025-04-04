@@ -31,9 +31,9 @@ class LinAlg
 		
 		if(rows*cols <=256)
 		{
-			#pragma omp simd
 			for(int i=0; i<rows;i++)
 			{
+				#pragma omp simd
 				for(int j=0;j<cols;j++)
 				{
 					sumptr[i][j]=a[i][j]+b[i][j];
@@ -130,9 +130,9 @@ class LinAlg
 		
 		if (cols <= 16) 
 		{  
-			#pragma omp simd
 			for (int i = 0; i < cols; i++) 
 			{
+				#pragma omp simd
 				for(int j=0; j< cols; j++)
 				{
 					if(i==j)
@@ -170,9 +170,9 @@ class LinAlg
 		
 		if(rows*cols <=256)
 		{
-			#pragma omp simd
 			for(int i=0; i<rows;i++)
 			{
+				#pragma omp simd
 				for(int j=0;j<cols;j++)
 				{
 					cpy[i][j]=a[i][j];
@@ -226,6 +226,40 @@ class LinAlg
 			created_arrays.erase(created_arrays.end() - 2);
 			return ret;
 		}
-	}	
+	}
+
+	template <std::size_t rows, typename T>
+	double (*outer(const T* a,const T* b))[rows]
+	{
+		auto newArray = std::make_unique<double[]>(rows * rows);
+		double* res = newArray.get();
+		created_arrays.push_back(std::move(newArray));
+		
+		double (*opr)[rows] = reinterpret_cast<double (*)[rows]>(res);
+		
+		if(rows*rows <= 256) 
+		{
+		    for(int i = 0; i < rows; i++) 
+			{
+				#pragma omp simd
+				for(int j = 0; j < rows; j++) 
+				{
+					opr[i][j]=a[i]*b[j];
+				}
+		    }
+		}
+		else 
+		{
+		    #pragma omp parallel for collapse(2) schedule(static)
+		   	for(int i = 0; i < rows; i++) 
+			{
+				for(int j = 0; j < rows; j++) 
+				{
+					opr[i][j]=a[i]*b[j];
+				}
+		    }
+		}
+		return opr;
+	}
 };
 #endif
