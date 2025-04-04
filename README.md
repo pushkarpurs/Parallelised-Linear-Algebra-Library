@@ -4,9 +4,8 @@ g++ main.cpp -fopenmp
 ### Implemented:
 1. add  
 2. eigvals  
-3. dot  
+3. dot (Same as inner) 
 4. matmul
-5. matrix_power  
-6. inner  
-7. outer  
-8. transpose  
+5. matrix_power
+6. outer  
+7. transpose  

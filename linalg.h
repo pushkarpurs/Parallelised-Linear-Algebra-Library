@@ -119,36 +119,40 @@ class LinAlg
 		return resultptr;
 	}
 	
-	double* identity(int size) 
+	template <std::size_t cols>
+	double (*identity())[cols] 
 	{
-		auto newArray = std::make_unique<double[]>(size * size);
-		double* idptr = newArray.get();
+		auto newArray = std::make_unique<double[]>(cols*cols);
+		double* res = newArray.get();
 		created_arrays.push_back(std::move(newArray));
-		if (size <= 16) 
+		
+		double (*idptr)[cols] = reinterpret_cast<double (*)[cols]>(res);
+		
+		if (cols <= 16) 
 		{  
 			#pragma omp simd
-			for (int i = 0; i < size; i++) 
+			for (int i = 0; i < cols; i++) 
 			{
-				for(int j=0; j< size; j++)
+				for(int j=0; j< cols; j++)
 				{
 					if(i==j)
-						idptr[i*size+j]=1.0;
+						idptr[i][j]=1.0;
 					else
-						idptr[i*size+j]=0.0;
+						idptr[i][j]=0.0;
 				}
 			}
 		} 
 		else 
 		{  
 			#pragma omp parallel for schedule(static)
-			for (int i = 0; i < size; i++) 
+			for (int i = 0; i < cols; i++) 
 			{
-				for(int j=0; j< size; j++)
+				for(int j=0; j< cols; j++)
 				{
 					if(i==j)
-						idptr[i*size+j]=1.0;
+						idptr[i][j]=1.0;
 					else
-						idptr[i*size+j]=0.0;
+						idptr[i][j]=0.0;
 				}
 			}
 		}
@@ -194,9 +198,8 @@ class LinAlg
 	{
 		if(exponent == 0) 
 		{
-			double* idMatrix = identity(cols); 
-			double (*result)[cols] = reinterpret_cast<double (*)[cols]>(idMatrix);
-		   	return result;
+			double (*idMatrix)[cols] = identity<cols>(); 
+		   	return idMatrix;
 		}
 		if(exponent == 1) 
 		{

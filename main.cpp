@@ -22,14 +22,15 @@ int main()
     }
 	double dt=linalg.dot(C,D,4);
 	std::cout<<"vector dot product"<<std::endl<<dt<<std::endl;
-	double *idt=linalg.identity(5);
+	
+	double (*idt)[5]=linalg.identity<5>();
 	
 	std::cout << "Identity Matrix Result:\n";
     for (int i = 0; i < 5; i++)
     {
 		for (int j=0; j<5; j++)
 		{
-			std::cout << idt[i*5+j] << " ";
+			std::cout << idt[i][j] << " ";
 		}
 		std::cout << std::endl;
     }
@@ -56,7 +57,7 @@ int main()
 		std::cout << std::endl;
     }
 	
-	double (*pows)[2]= linalg.power(A,5);
+	double (*pows)[2]= linalg.power(A,0);
 	std::cout << "Matrix Power Result:\n";
     for (int i = 0; i < 2; i++)
     {
