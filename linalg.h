@@ -42,8 +42,8 @@ class LinAlg
 		}
 		else
 		{
-			#pragma omp parallel for collapse(2) schedule(static)
-			for(int i=0; i<rows*cols;i++)
+			#pragma omp parallel for schedule(static)
+			for(int i=0; i<rows;i++)
 			{
 				for(int j=0; j<cols; j++)
 				{
@@ -181,7 +181,7 @@ class LinAlg
 		}
 		else
 		{
-			#pragma omp parallel for collapse(2) schedule(static)
+			#pragma omp parallel for schedule(static)
 			for(int i=0; i<rows*cols;i++)
 			{
 				for(int j=0; j<cols; j++)
@@ -248,7 +248,7 @@ class LinAlg
 		}
 		else 
 		{
-		    #pragma omp parallel for collapse(2) schedule(static)
+		    #pragma omp parallel for schedule(static)
 		   	for(int i = 0; i < rows; i++) 
 			{
 				for(int j = 0; j < rows; j++) 
@@ -281,7 +281,7 @@ class LinAlg
 		}
 		else
 		{
-			#pragma omp parallel for collapse(2) schedule(static)
+			#pragma omp parallel for schedule(static)
 			for(int i=0; i<rows*cols;i++)
 			{
 				for(int j=0; j<cols; j++)
@@ -293,6 +293,37 @@ class LinAlg
 		return transp;
 	}
 	
-	//double (*vecmat(
+	template <typename T1, typename T2, std::size_t cols>
+	double (*vecmat(const T1* a, const T2 (*b)[cols], int rows))[cols]
+	{
+		auto newArray = std::make_unique<double[]>(cols);
+        double* res = newArray.get();
+        created_arrays.push_back(std::move(newArray));
+		double (*vecm)[cols] = reinterpret_cast<double (*)[cols]>(res);
+		
+		if(rows*cols<256)
+		{
+			for(int j=0; j<rows; j++)
+			{
+				#pragma omp simd
+				for(int i=0; i<cols;i++)
+				{
+					vecm[0][i]+=a[j]*b[j][i];
+				}
+			}
+		}
+		else
+		{
+			#pragma omp paralell schedule(static)
+			for(int j=0; j<rows; j++)
+			{
+				for(int i=0; i<cols;i++)
+				{
+					vecm[0][i]+=a[j]*b[j][i];
+				}
+			}
+		}
+		return vecm;
+	}
 };
 #endif

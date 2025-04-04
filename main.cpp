@@ -10,6 +10,7 @@ int main()
     int B[2][2] = {{5, 6}, {7, 8}};
 	int C[4] = {1, 2, 3, 4};
     int D[4] = {5, 6, 7, 8};
+	int E[2] = {3,7};
     double (*result)[2] = linalg.add(A, B, 2);  // 2x2 matrix
     std::cout << "Matrix Addition Result:\n";
     for (int i = 0; i < 2; i++)
@@ -89,5 +90,13 @@ int main()
 		}
 		std::cout << std::endl;
     }
+	
+	double (*vcm)[2]= linalg.vecmat(E,A,2);
+	std::cout << "Vector Matrix Product Result:\n";
+    for (int i = 0; i < 2; i++)
+    {
+		std::cout << vcm[0][i] << " ";
+    }
+	
     return 0;
 }
