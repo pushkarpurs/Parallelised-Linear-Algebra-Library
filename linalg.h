@@ -5,8 +5,8 @@
 #include <memory>
 #include <omp.h>
 
-//Important: This implementation assumes the inputs and the returned outputs are of the form of a pointer to a contiguous memory allocation. For example even though int Arr[5][5] is a 2-d array, Arr is a pointer to a contiguous memory allocation and not a double pointer (which we dont want) it can be treated as Arr[25].
-//This also means that the number of rows or columns must be provided to the function as this cant be inferred from the passed pointer. 
+
+//the number of rows or columns must be provided (depends on the function requirements) as this cant be inferred from the passed pointer. 
 
 class LinAlg
 {
@@ -15,8 +15,8 @@ class LinAlg
 	
 	public:
 	//Template is used here as the function can take either int* or double* as the inputs. 
-	template <typename T, std::size_t cols>
-	double (*add(const T (*a)[cols], const T (*b)[cols], int rows))[cols] //function does not get the dimentions of the two matrices seperately and thus does not check for compatibility. It is up to the user to ensure the two matrices are of the same dimentions.
+	template <typename T1, typename T2, std::size_t cols>
+	double (*add(const T1 (*a)[cols], const T2 (*b)[cols], int rows))[cols] //function does not get the dimentions of the two matrices seperately and thus does not check for compatibility. It is up to the user to ensure the two matrices are of the same dimentions.
 	{
 		
 		//The below portion will be similar for all functions. Rename the double* sumptr to the name of the operation it is being used for
@@ -55,8 +55,8 @@ class LinAlg
 	}
 	
 	//This function is only for vectors. The library does not handle complex numbers and thus does not have different functins for matrix and vector dot products
-	template <typename T>
-	double dot(const  T* a, const T* b, int rows)
+	template <typename T1, typename T2>
+	double dot(const  T1* a, const T2* b, int rows)
 	{	
 		double s=0.0;
 		if(rows<=256)
@@ -78,8 +78,8 @@ class LinAlg
 		return s;
 	}
 	
-	template <typename T, std::size_t colsa, std::size_t colsb>
-	double	(*multiply(const T (*a)[colsa], const T (*b)[colsb], int rowsa, int rowsb))[colsb] 
+	template <typename T1, typename T2, std::size_t colsa, std::size_t colsb>
+	double	(*multiply(const T1 (*a)[colsa], const T2 (*b)[colsb], int rowsa, int rowsb))[colsb] 
 	{
 		auto newArray = std::make_unique<double[]>(rowsa * colsb);
 		double* res = newArray.get();
@@ -220,16 +220,14 @@ class LinAlg
 		else 
 		{
 		    double (*powMinusOne)[cols] = power(matrix, exponent - 1);
-			double (*matcpy)[cols]=copy(matrix,cols);
-		    double (*ret)[cols]=multiply(powMinusOne, matcpy, cols, cols);
-			created_arrays.erase(created_arrays.end() - 2);
+		    double (*ret)[cols]=multiply(powMinusOne, matrix, cols, cols);
 			created_arrays.erase(created_arrays.end() - 2);
 			return ret;
 		}
 	}
 
-	template <std::size_t rows, typename T>
-	double (*outer(const T* a,const T* b))[rows]
+	template <std::size_t rows, typename T1, typename T2>
+	double (*outer(const T1* a,const T2* b))[rows]
 	{
 		auto newArray = std::make_unique<double[]>(rows * rows);
 		double* res = newArray.get();
@@ -294,5 +292,7 @@ class LinAlg
 		}
 		return transp;
 	}
+	
+	//double (*vecmat(
 };
 #endif

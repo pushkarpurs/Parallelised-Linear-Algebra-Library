@@ -57,7 +57,7 @@ int main()
 		std::cout << std::endl;
     }
 	
-	double (*pows)[2]= linalg.power(A,0);
+	double (*pows)[2]= linalg.power(A,5);
 	std::cout << "Matrix Power Result:\n";
     for (int i = 0; i < 2; i++)
     {

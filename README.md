@@ -9,3 +9,5 @@ g++ main.cpp -fopenmp
 5. matrix_power
 6. outer  
 7. transpose  
+8. matvec  
+9. vecmat  
