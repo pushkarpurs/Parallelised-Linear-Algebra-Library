@@ -198,7 +198,6 @@ class LinAlg
 			double (*result)[cols] = reinterpret_cast<double (*)[cols]>(idMatrix);
 		   	return result;
 		}
-		
 		if(exponent == 1) 
 		{
 		    return copy(matrix,cols);
@@ -210,15 +209,20 @@ class LinAlg
 		if(exponent % 2 == 0) 
 		{
 		   	double (*half)[cols] = power(matrix, exponent / 2);
-		   	return multiply(half, half, cols, cols);
+		   	double (*ret)[cols] = multiply(half, half, cols, cols);
+			//deallocating the second last element and removing its entry in created arrays
+			created_arrays.erase(created_arrays.end() - 2);
+			return ret;
 		} 
 		else 
 		{
 		    double (*powMinusOne)[cols] = power(matrix, exponent - 1);
 			double (*matcpy)[cols]=copy(matrix,cols);
-		    return multiply(powMinusOne, matcpy, cols, cols);
+		    double (*ret)[cols]=multiply(powMinusOne, matcpy, cols, cols);
+			created_arrays.erase(created_arrays.end() - 2);
+			created_arrays.erase(created_arrays.end() - 2);
+			return ret;
 		}
-	}
-	
+	}	
 };
 #endif
