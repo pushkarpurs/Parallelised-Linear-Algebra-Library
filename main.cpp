@@ -91,12 +91,21 @@ int main()
 		std::cout << std::endl;
     }
 	
-	double (*vcm)[2]= linalg.vecmat(E,A,2);
+	int F[2][3] = {{1, 2, 3}, {4, 5, 6}};
+	double *vcm= linalg.vecmat(E,F,2);
 	std::cout << "Vector Matrix Product Result:\n";
+    for (int i = 0; i < 3; i++)
+    {
+		std::cout << vcm[i] << " ";
+    }
+	std::cout<<std::endl;
+	
+	int G[3]={1,2,3};
+	double *mtv= linalg.matvec(F,G,2);
+	std::cout << "Matrix Vector Product Result:\n";
     for (int i = 0; i < 2; i++)
     {
-		std::cout << vcm[0][i] << " ";
+		std::cout << mtv[i] << " ";
     }
-	
     return 0;
 }

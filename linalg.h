@@ -294,12 +294,11 @@ class LinAlg
 	}
 	
 	template <typename T1, typename T2, std::size_t cols>
-	double (*vecmat(const T1* a, const T2 (*b)[cols], int rows))[cols]
+	double *vecmat(const T1* a, const T2 (*b)[cols], int rows)
 	{
 		auto newArray = std::make_unique<double[]>(cols);
-        double* res = newArray.get();
+        double* vecm = newArray.get();
         created_arrays.push_back(std::move(newArray));
-		double (*vecm)[cols] = reinterpret_cast<double (*)[cols]>(res);
 		
 		if(rows*cols<256)
 		{
@@ -308,7 +307,7 @@ class LinAlg
 				#pragma omp simd
 				for(int i=0; i<cols;i++)
 				{
-					vecm[0][i]+=a[j]*b[j][i];
+					vecm[i]+=a[j]*b[j][i];
 				}
 			}
 		}
@@ -319,11 +318,43 @@ class LinAlg
 			{
 				for(int i=0; i<cols;i++)
 				{
-					vecm[0][i]+=a[j]*b[j][i];
+					vecm[i]+=a[j]*b[j][i];
 				}
 			}
 		}
 		return vecm;
+	}
+	
+	template <typename T1, std::size_t cols, typename T2>
+	double *matvec(const T1 (*a)[cols], const T2* b, int rows)
+	{
+		auto newArray = std::make_unique<double[]>(rows);
+        double* matv = newArray.get();
+        created_arrays.push_back(std::move(newArray));
+		
+		if(rows*cols<256)
+		{
+			for(int j=0; j<rows; j++)
+			{
+				#pragma omp simd
+				for(int i=0; i<cols;i++)
+				{
+					matv[j]+=b[i]*a[j][i];
+				}
+			}
+		}
+		else
+		{
+			#pragma omp paralell schedule(static)
+			for(int j=0; j<rows; j++)
+			{
+				for(int i=0; i<cols;i++)
+				{
+					matv[j]+=b[i]*a[j][i];
+				}
+			}
+		}
+		return matv;
 	}
 };
 #endif
