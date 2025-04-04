@@ -54,16 +54,12 @@ class LinAlg
 		return sumptr;
 	}
 	
+	//This function is only for vectors. The library does not handle complex numbers and thus does not have different functins for matrix and vector dot products
 	template <typename T>
-	double dot(const  T* a, const T* b, int rows, int cols)
+	double dot(const  T* a, const T* b, int rows)
 	{	
-		if(cols!=1)
-		{
-			std::cout<<"ERROR: Dot product can only be computed for vectors. Matrices unsupported. Use matmul"<<std::endl;
-			return NaN;
-		}
 		double s=0.0;
-		if(rows<=128)
+		if(rows<=256)
 		{
 			#pragma omp simd
 			for(int i=0; i<rows; i++)
@@ -73,7 +69,7 @@ class LinAlg
 		}
 		else
 		{
-			#pragma omp parallel for reduction(+:s)
+			#pragma omp parallel for reduction(+:s) schedule(static)
 			for(int i=0; i<rows; i++)
 			{
 				s+=a[i]*b[i];
@@ -82,125 +78,146 @@ class LinAlg
 		return s;
 	}
 	
-	template <typename T>
-	double* matmul(const  T* a, const T* b, int rowsa, int colsa, int rowsb, int colsb)
+	template <typename T, std::size_t colsa, std::size_t colsb>
+	double	(*multiply(const T (*a)[colsa], const T (*b)[colsb], int rowsa, int rowsb))[colsb] 
 	{
-		if(colsa!=rowsb)
-		{
-			std::cout<<"Error: Mismatch of matrix dimentions"<<std::endl;
-			return nullptr;
-		}
-		auto newArray = std::make_unique<double[]>(rows * cols);
-        double* matmul = newArray.get();
-        created_arrays.push_back(std::move(newArray));
-	}
-
-	
-    	// Matrix multiplication
-	template <typename T>
-	double* multiply(const T* a, const T* b, int rows, int cols) 
-	{
-		auto newArray = std::make_unique<double[]>(rows * cols);
-		double* resultptr = newArray.get();
+		auto newArray = std::make_unique<double[]>(rowsa * colsb);
+		double* res = newArray.get();
+		created_arrays.push_back(std::move(newArray));
 		
-		if(rows <= 64) 
+		double (*resultptr)[colsb] = reinterpret_cast<double (*)[colsb]>(res);
+		
+		if(rowsa*colsb <= 64) 
 		{
-		    	for(int i = 0; i < rows; i++) 
+		    for(int i = 0; i < rowsa; i++) 
 			{
-				for(int j = 0; j < cols; j++) 
+				for(int j = 0; j < colsb; j++) 
 				{
-			    		double sum = 0;
-			    		#pragma omp simd reduction(+:sum)
-			    		for(int k = 0; k < cols; k++) 
+					#pragma omp simd
+					for(int k = 0; k < colsa; k++) 
 					{
-						sum += a[i*cols + k] * b[k*cols + j];
-			    		}
-			    		resultptr[i*cols + j] = sum;
+						resultptr[i][j]+=a[i][k]*b[k][j];
+					}
 				}
-		    	}
+		    }
 		}
 		else 
 		{
-		    	//collapse(2) only if the number of threads is more than the number of rows in the matrix and for matrices of size >= 64
-		    	#pragma omp parallel for collapse(2) 
-		    	for(int i = 0; i < rows; i++) 
+		    #pragma omp parallel for collapse(2) schedule(static)
+		   	for(int i = 0; i < rowsa; i++) 
 			{
-				for(int j = 0; j < cols; j++) 
+				for(int j = 0; j < colsb; j++) 
 				{
-			    		double sum = 0;
-			    		#pragma omp simd reduction(+:sum)
-			    		for(int k = 0; k < cols; k++) 
+		    		#pragma omp simd
+		    		for(int k = 0; k < colsa; k++) 
 					{
-						sum += a[i*cols + k] * b[k*cols + j];
-			    		}
-			    		resultptr[i*cols + j] = sum;
+						resultptr[i][j]+=a[i][k]*b[k][j];
+		    		}
 				}
-		    	}
+		   	}
 		}
-		
-		created_arrays.push_back(std::move(newArray));
 		return resultptr;
 	}
-	    
-    	// Creating identity matrix for base case (exponent == 0)
-    	double* identity(int size) 
+	
+	double* identity(int size) 
 	{
-		auto newArray = std::make_unique<double[]>(rows * cols);
+		auto newArray = std::make_unique<double[]>(size * size);
 		double* idptr = newArray.get();
-		if (size <= 64) 
+		created_arrays.push_back(std::move(newArray));
+		if (size <= 16) 
 		{  
-	    		#pragma omp simd
-	    		for (int i = 0; i < size * size; i++) 
+			#pragma omp simd
+			for (int i = 0; i < size; i++) 
 			{
-				idptr[i] = (i / size == i % size) ? 1.0 : 0.0;
-	    		}
+				for(int j=0; j< size; j++)
+				{
+					if(i==j)
+						idptr[i*size+j]=1.0;
+					else
+						idptr[i*size+j]=0.0;
+				}
+			}
 		} 
 		else 
 		{  
-	    		#pragma omp parallel for
-	    		for (int i = 0; i < size * size; i++) 
+			#pragma omp parallel for schedule(static)
+			for (int i = 0; i < size; i++) 
 			{
-				idptr[i] = (i / size == i % size) ? 1.0 : 0.0;
-	    		}
+				for(int j=0; j< size; j++)
+				{
+					if(i==j)
+						idptr[i*size+j]=1.0;
+					else
+						idptr[i*size+j]=0.0;
+				}
+			}
 		}
 	
 		return idptr;
 	}
-    
-    
-   	 // Using binary exponentiation for reducing number of matrix multiplications
-	template <typename T>
-	double* power(const T* matrix, int size, int exponent) 
+	
+	template <typename T, std::size_t cols>
+	double (*copy(const T (*a)[cols], int rows))[cols]
+	{
+		auto newArray = std::make_unique<double[]>(rows * cols);
+        double* res = newArray.get();
+        created_arrays.push_back(std::move(newArray));
+		double (*cpy)[cols] = reinterpret_cast<double (*)[cols]>(res);
+		
+		if(rows*cols <=256)
+		{
+			#pragma omp simd
+			for(int i=0; i<rows;i++)
+			{
+				for(int j=0;j<cols;j++)
+				{
+					cpy[i][j]=a[i][j];
+				}
+			}
+		}
+		else
+		{
+			#pragma omp parallel for collapse(2) schedule(static)
+			for(int i=0; i<rows*cols;i++)
+			{
+				for(int j=0; j<cols; j++)
+				{
+					cpy[i][j]=a[i][j];
+				}
+			}
+		}
+		return cpy;
+	}
+	
+	template <typename T, std::size_t cols>
+	double (*power(const T (*matrix)[cols], int exponent))[cols] 
 	{
 		if(exponent == 0) 
 		{
-			double* idMatrix = identity(size); 
-		   	created_arrays.push_back(std::unique_ptr<double[]>(idMatrix)); 
-		   	return idMatrix;
+			double* idMatrix = identity(cols); 
+			double (*result)[cols] = reinterpret_cast<double (*)[cols]>(idMatrix);
+		   	return result;
 		}
 		
 		if(exponent == 1) 
 		{
-		    	double* originalMatrix = matrix;          
-		    	created_arrays.push_back(std::unique_ptr<double[]>(originalMatrix));
-		    	return originalMatrix;
+		    return copy(matrix,cols);
 		}
-		
+		if(exponent == 2)
+		{
+			return multiply(matrix,matrix,cols,cols);
+		}
 		if(exponent % 2 == 0) 
 		{
-		   	double* half = power(matrix, size, exponent / 2);
-		   	return multiply(half, half, size, size);
-			delete[] half;
+		   	double (*half)[cols] = power(matrix, exponent / 2);
+		   	return multiply(half, half, cols, cols);
 		} 
 		else 
 		{
-		    	double* powMinusOne = power(matrix, size, exponent - 1);
-		    	return multiply(matrix, powMinusOne, size, size);
-			delete[] powMinusOne;
+		    double (*powMinusOne)[cols] = power(matrix, exponent - 1);
+		    return powMinusOne;
 		}
 	}
-
-    
+	
 };
-
 #endif
