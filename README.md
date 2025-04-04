@@ -7,3 +7,6 @@ g++ main.cpp -fopenmp
 3. dot  
 4. matmul
 5. matrix_power  
+6. inner  
+7. outer  
+8. transpose  
