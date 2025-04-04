@@ -62,7 +62,7 @@ int main()
     {
 		for (int j=0; j<2; j++)
 		{
-			std::cout << cp[i][j] << " ";
+			std::cout << pows[i][j] << " ";
 		}
 		std::cout << std::endl;
     }

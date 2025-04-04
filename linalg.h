@@ -215,7 +215,8 @@ class LinAlg
 		else 
 		{
 		    double (*powMinusOne)[cols] = power(matrix, exponent - 1);
-		    return powMinusOne;
+			double (*matcpy)[cols]=copy(matrix,cols);
+		    return multiply(powMinusOne, matcpy, cols, cols);
 		}
 	}
 	
