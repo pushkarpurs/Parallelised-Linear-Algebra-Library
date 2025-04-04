@@ -15,34 +15,42 @@ class LinAlg
 	
 	public:
 	//Template is used here as the function can take either int* or double* as the inputs. 
-	template <typename T>
-	double* add(const T* a, const T* b, int rows, int cols)
+	template <typename T, std::size_t cols>
+	double (*add(const T (*a)[cols], const T (*b)[cols], int rows))[cols] //function does not get the dimentions of the two matrices seperately and thus does not check for compatibility. It is up to the user to ensure the two matrices are of the same dimentions.
 	{
 		
 		//The below portion will be similar for all functions. Rename the double* sumptr to the name of the operation it is being used for
 		auto newArray = std::make_unique<double[]>(rows * cols);
-        double* sumptr = newArray.get();
+        double* res = newArray.get();
         created_arrays.push_back(std::move(newArray));
+		
+		double (*sumptr)[cols] = reinterpret_cast<double (*)[cols]>(res);
 		
 		//Uncecessary to spawn threads for smaller matrices. Threading overhead dominates and SIMD is better
 		//Note SIMD is an intra processor instruction. Bascially a vector instruction, but omp paralell is inter processor spawning multiple threads
-		if(rows*cols <=128)
+		
+		if(rows*cols <=256)
 		{
 			#pragma omp simd
-			for(int i=0; i<rows*cols;i++)
+			for(int i=0; i<rows;i++)
 			{
-				sumptr[i]=a[i]+b[i];
+				for(int j=0;j<cols;j++)
+				{
+					sumptr[i][j]=a[i][j]+b[i][j];
+				}
 			}
 		}
 		else
 		{
-			#pragma omp parallel for
+			#pragma omp parallel for collapse(2) schedule(static)
 			for(int i=0; i<rows*cols;i++)
 			{
-				sumptr[i]=a[i]+b[i];
+				for(int j=0; j<cols; j++)
+				{
+					sumptr[i][j]=a[i][j]+b[i][j];
+				}
 			}
 		}
-			
 		return sumptr;
 	}
 	
