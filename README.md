@@ -11,3 +11,4 @@ g++ main.cpp -fopenmp
 7. transpose  
 8. matvec  
 9. vecmat  
+10. cholesky  
