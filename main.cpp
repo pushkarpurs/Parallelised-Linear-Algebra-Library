@@ -127,5 +127,7 @@ int main()
 		std::cout << std::endl;
     }
 	
+	double dtm=linalg.determinant(I,3);
+	std::cout<<"Determinant of the Matrix"<<std::endl<<dtm<<std::endl;
     return 0;
 }

@@ -13,3 +13,4 @@ g++ main.cpp -fopenmp
 9. vecmat  
 10. cholesky  
 11. qrdecomp
+12. determinant

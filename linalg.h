@@ -430,5 +430,63 @@ class LinAlg
 		created_arrays.push_back(std::move(newArray));
 		return L;
 	}
+	
+	template <typename T, size_t cols>
+	double determinant(const T (*a)[cols], int rows) 
+	{
+		//kindof implementinf LU here. Though not really calculating L explicitly since we just need the diagonal elements of U
+		double lu[rows][cols];
+		int perm[rows];
+		int swaps = 0;
+
+		#pragma omp parallel for collapse(2)
+		for (int i=0; i<rows; i++)
+			for (int j=0; j<rows; j++)
+				lu[i][j] = a[i][j];
+
+		for (int k=0; k<rows; k++) 
+		{
+			int pivot = k;
+			double maxv = std::abs(lu[k][k]);
+			for (int i =k+1; i<rows; i++) 
+			{
+				if (std::abs(lu[i][k]) > maxv) 
+				{
+					maxv = std::abs(lu[i][k]);
+					pivot = i;
+				}
+			}
+
+			if (maxv < 1e-12) 
+				return 0.0;
+
+			if (pivot != k) 
+			{
+				std::swap_ranges(lu[k], lu[k]+rows, lu[pivot]);
+				swaps++;
+			}
+
+			double pivot_val = lu[k][k];
+
+			#pragma omp parallel for
+			for (int i = k+1; i<rows; i++) 
+			{
+				lu[i][k] /= pivot_val;
+				for (int j = k + 1; j<rows; j++) 
+				{
+					lu[i][j] -= lu[i][k] * lu[k][j];
+				}
+			}
+		}
+		double det=1.0;
+		#pragma omp paralell for schedule(static) reduction(*:det)
+		for (int i = 0; i<rows; i++) 
+		{
+			det *= lu[i][i];
+		}
+		if(swaps%2==1)
+			det*=-1;
+		return det;
+	}
 };
 #endif
