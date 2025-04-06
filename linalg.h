@@ -540,7 +540,7 @@ class LinAlg
 	}
 
 	template <typename T, size_t cols>
-	double (*invertMatrix(const T (*a)[cols], int rows))[cols] 
+	double (*inverse(const T (*a)[cols], int rows))[cols] 
 	{
     		int swaps = 0;
     		int pivot[rows];
