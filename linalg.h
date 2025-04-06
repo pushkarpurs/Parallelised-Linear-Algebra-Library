@@ -432,61 +432,139 @@ class LinAlg
 	}
 	
 	template <typename T, size_t cols>
+	double (*ludecompose(const T (*a)[cols], int rows, int& swaps, int* pivot))[cols] 
+	{
+    		auto newArray = make_unique_array<double>(rows * cols);
+    		double* res = newArray.get();
+    		created_arrays.push_back(std::move(newArray));
+    		double (*lu)[cols] = reinterpret_cast<double (*)[cols]>(res);
+
+    		for (int i = 0; i < rows; ++i) pivot[i] = i;
+
+   	 	#pragma omp parallel for collapse(2)
+    		for (int i = 0; i < rows; i++)
+		{
+        		for (int j = 0; j < cols; j++)
+			{
+            			lu[i][j] = a[i][j];
+			}
+		}
+
+    		swaps = 0;
+
+    		for (int k = 0; k < rows; k++) 
+		{
+        		int pivot_index = k;
+        		double maxv = std::abs(lu[k][k]);
+        		for (int i = k + 1; i < rows; i++) 
+			{
+            			if (std::abs(lu[i][k]) > maxv) 
+				{
+                			maxv = std::abs(lu[i][k]);
+                			pivot_index = i;
+            			}
+        		}
+
+       			if (maxv < 1e-12)
+            			return nullptr;
+
+       			if (pivot_index != k) 
+			{
+            			std::swap_ranges(lu[k], lu[k] + cols, lu[pivot_index]);
+	    			std::swap(pivot[k], pivot[pivot_index]);
+            			swaps++;
+        		}
+
+        		double pivot_val = lu[k][k];
+        		#pragma omp parallel for
+        		for (int i = k + 1; i < rows; i++) 
+			{
+            			lu[i][k] /= pivot_val;
+            			for (int j = k + 1; j < cols; j++) 
+				{
+                			lu[i][j] -= lu[i][k] * lu[k][j];
+            			}
+        		}
+    		}
+
+    		return lu;
+	}
+
+	template <typename T, size_t cols>
 	double determinant(const T (*a)[cols], int rows) 
 	{
-		//kindof implementinf LU here. Though not really calculating L explicitly since we just need the diagonal elements of U
-		double lu[rows][cols];
-		int perm[rows];
-		int swaps = 0;
-
-		#pragma omp parallel for collapse(2)
-		for (int i=0; i<rows; i++)
-			for (int j=0; j<rows; j++)
-				lu[i][j] = a[i][j];
-
-		for (int k=0; k<rows; k++) 
+    		int swaps = 0;
+    		int pivot[rows];
+    		double (*lu)[cols] = ludecompose(a, rows, swaps, pivot);
+    		if (!lu) 
 		{
-			int pivot = k;
-			double maxv = std::abs(lu[k][k]);
-			for (int i =k+1; i<rows; i++) 
-			{
-				if (std::abs(lu[i][k]) > maxv) 
-				{
-					maxv = std::abs(lu[i][k]);
-					pivot = i;
-				}
-			}
+        		std::cerr << "Matrix is singular.\n";
+        		return 0.0;
+    		}
 
-			if (maxv < 1e-12) 
-				return 0.0;
-
-			if (pivot != k) 
-			{
-				std::swap_ranges(lu[k], lu[k]+rows, lu[pivot]);
-				swaps++;
-			}
-
-			double pivot_val = lu[k][k];
-
-			#pragma omp parallel for
-			for (int i = k+1; i<rows; i++) 
-			{
-				lu[i][k] /= pivot_val;
-				for (int j = k + 1; j<rows; j++) 
-				{
-					lu[i][j] -= lu[i][k] * lu[k][j];
-				}
-			}
-		}
-		double det=1.0;
-		#pragma omp paralell for schedule(static) reduction(*:det)
-		for (int i = 0; i<rows; i++) 
+    		double det = 1.0;
+    		#pragma omp parallel for reduction(* : det)
+    		for (int i = 0; i < rows; i++) 
 		{
-			det *= lu[i][i];
-		}
-		if(swaps%2==1)
-			det*=-1;
-		return det;
+        		det *= lu[i][i];
+    		}
+    		if (swaps % 2 != 0)
+        		det *= -1;
+    		return det;
 	}
+
+	template <typename T, size_t cols>
+	void forwardSubstitution(const T (*lu)[cols], double* y, int rows, int col, const int* pivot) 
+	{
+    		for (int i = 0; i < rows; ++i) 
+		{
+			if(pivot[i] == col)
+				y[i] = 1.0;
+			else
+				y[i] = 0.0;
+        		for (int j = 0; j < i; ++j)
+            			y[i] -= lu[i][j] * y[j];
+    		}
+	}
+
+	template <typename T, size_t cols>
+	void backwardSubstitution(const T (*lu)[cols], double* y, double* x, int rows) 
+	{
+    		for (int i = rows - 1; i >= 0; --i) 
+		{
+        		x[i] = y[i];
+        		for (int j = i + 1; j < rows; ++j)
+            			x[i] -= lu[i][j] * x[j];
+       			x[i] /= lu[i][i];
+    		}
+	}
+
+	template <typename T, size_t cols>
+	double (*invertMatrix(const T (*a)[cols], int rows))[cols] 
+	{
+    		int swaps = 0;
+    		int pivot[rows];
+    		double (*lu)[cols] = ludecompose(a, rows, swaps, pivot);
+    		if (!lu) 
+			return nullptr;
+
+    		auto newArray = make_unique_array<double>(rows * cols);
+    		double* res = newArray.get();
+    		created_arrays.push_back(std::move(newArray));
+    		double (*inv)[cols] = reinterpret_cast<double (*)[cols]>(res);
+
+    		#pragma omp parallel for
+    		for (int col = 0; col < cols; ++col)
+		{
+        		double y[rows], x[rows];
+        		forwardSubstitution(lu, y, rows, col, pivot);
+        		backwardSubstitution(lu, y, x, rows);
+        		for (int i = 0; i < rows; ++i)
+            			inv[i][col] = x[i];
+    		}
+
+    		return inv;
+	}
+
 };
 #endif
