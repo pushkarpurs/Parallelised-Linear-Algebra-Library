@@ -129,5 +129,23 @@ int main()
 	
 	double dtm=linalg.determinant(I,3);
 	std::cout<<"Determinant of the Matrix"<<std::endl<<dtm<<std::endl;
+
+	double (*inv)[3]=linalg.inverse(I, 3);
+	if(inv)
+	{
+		std::cout << "Inverse of a Matrix Result:\n";
+    		for (int i = 0; i <3; i++)
+    		{
+			for (int j=0; j<3; j++)
+			{
+				std::cout << std::setw(10) << std::fixed << std::setprecision(5) << inv[i][j] << " ";
+			}
+        		std::cout << "\n";
+    		}
+    	else 
+	{
+        	std::cout << "\nMatrix is singular or not invertible.\n";
+    	}
+
     return 0;
 }
