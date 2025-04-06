@@ -3,7 +3,7 @@ g++ main.cpp -fopenmp
 
 ### Implemented:
 1. add  
-2. *eigvals  
+2. eigenval  
 3. dot (=inner) 
 4. matmul
 5. matrix_power
