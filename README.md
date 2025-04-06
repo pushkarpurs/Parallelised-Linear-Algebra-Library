@@ -14,4 +14,4 @@ g++ main.cpp -fopenmp
 10. cholesky  
 11. *qrdecomp  
 12. determinant  
-13. *inverse   
+13. inverse   
