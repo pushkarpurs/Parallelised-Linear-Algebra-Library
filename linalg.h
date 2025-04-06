@@ -7,6 +7,8 @@
 #include <cmath>
 #include <iostream>
 #include <atomic>
+#include <utility>
+#include <algorithm>
 
 
 //the number of rows or columns must be provided (depends on the function requirements) as this cant be inferred from the passed pointer. 
@@ -565,6 +567,58 @@ class LinAlg
 
     		return inv;
 	}
+
+	template <typename T, size_t cols>
+	std::pair<T*, T*>  qrdecomp(const  T (*a)[cols], int rows)
+	{
+		auto newArray1 = std::make_unique<double[]>(rows * cols);
+    		auto newArray2 = std::make_unique<double[]>(rows * cols);
+    		double* q = newArray1.get();
+    		double* r = newArray2.get();
+    		created_arrays.push_back(std::move(newArray1));
+    		created_arrays.push_back(std::move(newArray2));
+
+    		double (*Q)[cols] = reinterpret_cast<double (*)[cols]>(q);
+    		double (*R)[cols] = reinterpret_cast<double (*)[cols]>(r);
+
+    		for (int k = 0; k < cols; ++k) 
+		{
+		        #pragma omp parallel for
+        		for (int i = 0; i < rows; ++i)
+            			Q[i][k] = a[i][k];
+
+		        for (int j = 0; j < k; ++j) 
+			{
+				double A_col[rows], Q_col[rows];
+            			#pragma omp simd
+            			for (int i = 0; i < rows; ++i) 
+				{
+                			A_col[i] = a[i][k];
+                			Q_col[i] = Q[i][j];
+            			}
+            			double rjk = dot(Q_col,A_col, rows);
+            			R[j][k] = rjk;
+
+            			#pragma omp parallel for
+            			for (int i = 0; i < rows; ++i)
+                			Q[i][k] -= rjk * Q[i][j];
+        		}
+
+        		double norm = 0.0;
+        		#pragma omp simd reduction(+:norm)
+        		for (int i = 0; i < rows; ++i)
+            			norm += Q[i][k] * Q[i][k];
+
+        		R[k][k] = std::sqrt(norm);
+
+        		#pragma omp parallel for
+		        for (int i = 0; i < rows; ++i)
+            			Q[i][k] /= R[k][k];
+    		}
+		
+    		return {reinterpret_cast<T*>(Q), reinterpret_cast<T*>(R)};
+	}
+
 
 };
 #endif
