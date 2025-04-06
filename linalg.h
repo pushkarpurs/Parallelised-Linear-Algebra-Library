@@ -187,7 +187,7 @@ class LinAlg
 		else
 		{
 			#pragma omp parallel for schedule(static)
-			for(int i=0; i<rows*cols;i++)
+			for(int i=0; i<rows;i++)
 			{
 				for(int j=0; j<cols; j++)
 				{
@@ -619,6 +619,68 @@ class LinAlg
     		return {reinterpret_cast<T*>(Q), reinterpret_cast<T*>(R)};
 	}
 
+	template <typename T, size_t cols>
+	bool is_upper_triangular(const T (*A)[cols], double tolerance = 1e-10) 
+	{
+		bool is_upper = true; 
+		#pragma omp parallel for reduction(&:is_upper)
+    		for (int i = 1; i < cols; ++i) 
+		{
+        		for (int j = 0; j < i; ++j) 
+			{
+            			if (std::abs(A[i][j]) > tolerance) 
+				{
+                			is_upper = false;
+            			}
+        		}
+    		}
+    		return is_upper;
+	}
+
+	template <typename T, size_t cols>
+	std::vector<double> eigenval(const T (*A)[cols],int rows,int max_iterations = 100, double tolerance = 1e-10) 
+	{
+    		double (*A_k)[cols]=copy(A, rows);
+    
+    		for (int iter = 0; iter < max_iterations; ++iter) 
+		{
+        		if (is_upper_triangular(A_k, tolerance)) 
+			{
+            			break;
+        		}
+        
+        		auto result = qrdecomp(A_k, rows);
+        		double* Q_raw = result.first;
+        		double* R_raw = result.second;
+        
+        		double (*Q)[cols] = reinterpret_cast<double (*)[cols]>(Q_raw);
+        		double (*R)[cols] = reinterpret_cast<double (*)[cols]>(R_raw);
+
+			//Not sure about the mem mgmt happening here
+        		double (*new_A)[cols]=multiply(R, Q, rows, rows);
+        		A_k = copy(new_A, rows);
+        
+    		}
+
+    		std::vector<double> eigenvalues(rows);
+    		if(rows<=16)
+		{
+        		#pragma omp simd
+    			for (size_t i = 0; i < rows; ++i) 
+			{
+        			eigenvalues[i]=A_k[i][i];
+    			}
+		}
+		else
+		{
+    			#pragma omp parallel for schedule(static)
+    			for (size_t i = 0; i < rows; ++i) 
+			{
+        			eigenvalues[i]=A_k[i][i];
+    			}
+		}
+		return eigenvalues;
+	}
 
 };
 #endif
