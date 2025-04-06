@@ -12,7 +12,7 @@ g++ main.cpp -fopenmp
 8. matvec  
 9. vecmat  
 10. cholesky  
-11. *qrdecomp
+11. qrdecomp
 12. ludecompose (in-place) 
 13. determinant  
 14. inverse   
