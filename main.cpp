@@ -173,5 +173,12 @@ int main()
         	std::cout << "\n";
     	}
 
+	std::vector<double> eigenvalues = linalg.eigenval(I, 3);
+	std::cout << "Eigenvalues of Matrix:\n";
+    	for (int i=0; i<3; i++) 
+	{
+        	std::cout << std::fixed << std::setprecision(10) << eigenvalues[i] << "\n";
+    	}
+	
     	return 0;
 }
