@@ -9,6 +9,7 @@
 #include <atomic>
 #include <utility>
 #include <algorithm>
+#include <cstring> 
 
 
 //the number of rows or columns must be provided (depends on the function requirements) as this cant be inferred from the passed pointer. 
@@ -50,6 +51,7 @@ class LinAlg
 			#pragma omp parallel for schedule(static)
 			for(int i=0; i<rows;i++)
 			{
+				#pragma omp simd
 				for(int j=0; j<cols; j++)
 				{
 					sumptr[i][j]=a[i][j]+b[i][j];
@@ -152,6 +154,7 @@ class LinAlg
 			#pragma omp parallel for schedule(static)
 			for (int i = 0; i < cols; i++) 
 			{
+				#pragma omp simd
 				for(int j=0; j< cols; j++)
 				{
 					if(i==j)
@@ -189,6 +192,7 @@ class LinAlg
 			#pragma omp parallel for schedule(static)
 			for(int i=0; i<rows;i++)
 			{
+				#pragma omp simd
 				for(int j=0; j<cols; j++)
 				{
 					cpy[i][j]=a[i][j];
@@ -256,6 +260,7 @@ class LinAlg
 		    #pragma omp parallel for schedule(static)
 		   	for(int i = 0; i < rows; i++) 
 			{
+				#pragma omp simd
 				for(int j = 0; j < rows; j++) 
 				{
 					opr[i][j]=a[i]*b[j];
@@ -273,28 +278,31 @@ class LinAlg
         created_arrays.push_back(std::move(newArray));
 		double (*transp)[cols] = reinterpret_cast<double (*)[cols]>(res);
 		
-		if(rows*cols <=256)
-		{
-			for(int i=0; i<rows;i++)
-			{
+		int blockSize = 32; // Tune this depending on your cache size
+
+		if (rows * cols <= 256) {
+			for (int i = 0; i < rows; i++) {
 				#pragma omp simd
-				for(int j=0;j<cols;j++)
-				{
-					transp[j][i]=a[i][j];
+				for (int j = 0; j < cols; j++) {
+					transp[j][i] = a[i][j];
+				}
+			}
+		} 
+		else {
+			#pragma omp parallel for collapse(2) schedule(static)
+			for (int ii = 0; ii < rows; ii += blockSize) {
+				for (int jj = 0; jj < cols; jj += blockSize) {
+					for (int i = ii; i < ii + blockSize && i < rows; i++) {
+						#pragma omp simd
+						for (int j = jj; j < std::min(jj + blockSize, static_cast<int>(cols)); j++)
+						{
+							transp[j][i] = a[i][j];
+						}
+					}
 				}
 			}
 		}
-		else
-		{
-			#pragma omp parallel for schedule(static)
-			for(int i=0; i<rows*cols;i++)
-			{
-				for(int j=0; j<cols; j++)
-				{
-					transp[j][i]=a[i][j];
-				}
-			}
-		}
+
 		return transp;
 	}
 	
@@ -305,25 +313,43 @@ class LinAlg
         double* vecm = newArray.get();
         created_arrays.push_back(std::move(newArray));
 		
-		if(rows*cols<256)
+		if (rows * cols < 256)
 		{
-			for(int j=0; j<rows; j++)
+			for (int j = 0; j < rows; j++)
 			{
 				#pragma omp simd
-				for(int i=0; i<cols;i++)
+				for (int i = 0; i < cols; i++)
 				{
-					vecm[i]+=a[j]*b[j][i];
+					vecm[i] += a[j] * b[j][i];
 				}
 			}
 		}
 		else
 		{
-			#pragma omp parallel for schedule(static)
-			for(int j=0; j<rows; j++)
+			int num_threads = omp_get_max_threads();
+			std::vector<std::vector<double>> local_sums(num_threads, std::vector<double>(cols, 0.0));
+
+			#pragma omp parallel
 			{
-				for(int i=0; i<cols;i++)
+				int tid = omp_get_thread_num();
+				std::vector<double>& local_vec = local_sums[tid];
+
+				#pragma omp for schedule(static)
+				for (int j = 0; j < rows; j++)
 				{
-					vecm[i]+=a[j]*b[j][i];
+					for (int i = 0; i < cols; i++)
+					{
+						local_vec[i] += a[j] * b[j][i];
+					}
+				}
+			}
+
+			// Reduction
+			for (int t = 0; t < num_threads; t++)
+			{
+				for (int i = 0; i < cols; i++)
+				{
+					vecm[i] += local_sums[t][i];
 				}
 			}
 		}
@@ -337,25 +363,43 @@ class LinAlg
         double* matv = newArray.get();
         created_arrays.push_back(std::move(newArray));
 		
-		if(rows*cols<256)
+		if (rows * cols < 256)
 		{
-			for(int j=0; j<rows; j++)
+			for (int j = 0; j < rows; j++)
 			{
 				#pragma omp simd
-				for(int i=0; i<cols;i++)
+				for (int i = 0; i < cols; i++)
 				{
-					matv[j]+=b[i]*a[j][i];
+					matv[j] += b[i] * a[j][i];
 				}
 			}
 		}
 		else
 		{
-			#pragma omp parallel for schedule(static)
-			for(int j=0; j<rows; j++)
+			std::vector<double> local_sum(rows, 0.0);
+
+			#pragma omp parallel
 			{
-				for(int i=0; i<cols;i++)
+				std::vector<double> thread_private(rows, 0.0);  // thread-local storage
+
+				#pragma omp for schedule(static)
+				for (int j = 0; j < rows; j++)
 				{
-					matv[j]+=b[i]*a[j][i];
+					double sum = 0.0;
+					for (int i = 0; i < cols; i++)
+					{
+						sum += b[i] * a[j][i];
+					}
+					thread_private[j] = sum;
+				}
+
+				// Reduction step: each thread adds its contribution
+				#pragma omp critical
+				{
+					for (int j = 0; j < rows; j++)
+					{
+						matv[j] += thread_private[j];
+					}
 				}
 			}
 		}
