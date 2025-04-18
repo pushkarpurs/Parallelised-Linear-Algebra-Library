@@ -279,7 +279,7 @@ class LinAlg
         created_arrays.push_back(std::move(newArray));
 		double (*transp)[cols] = reinterpret_cast<double (*)[cols]>(res);
 		
-		int blockSize = 32; // Tune this depending on your cache size
+		int blockSize = 32;
 
 		if (rows * cols <= 256) {
 			for (int i = 0; i < rows; i++) {
@@ -290,6 +290,7 @@ class LinAlg
 			}
 		} 
 		else {
+			// Tiling
 			#pragma omp parallel for schedule(static)
 			for (int ii = 0; ii < rows; ii += blockSize) {
 				for (int jj = 0; jj < cols; jj += blockSize) {
@@ -381,7 +382,7 @@ class LinAlg
 
 			#pragma omp parallel
 			{
-				std::vector<double> thread_private(rows, 0.0);  // thread-local storage
+				std::vector<double> thread_private(rows, 0.0); 
 
 				#pragma omp for schedule(static)
 				for (int j = 0; j < rows; j++)
@@ -393,8 +394,6 @@ class LinAlg
 					}
 					thread_private[j] = sum;
 				}
-
-				// Reduction step: each thread adds its contribution
 				#pragma omp critical
 				{
 					for (int j = 0; j < rows; j++)
