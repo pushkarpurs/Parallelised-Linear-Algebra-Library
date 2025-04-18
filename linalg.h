@@ -443,7 +443,7 @@ class LinAlg
 
     		for (int i = 0; i < rows; ++i) pivot[i] = i;
 
-   	 	#pragma omp parallel for collapse(2)
+   	 	#pragma omp parallel for
     		for (int i = 0; i < rows; i++)
 		{
         		for (int j = 0; j < cols; j++)
