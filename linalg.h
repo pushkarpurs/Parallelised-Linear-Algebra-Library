@@ -189,6 +189,7 @@ class LinAlg
 		}
 		else
 		{
+			// Note: Generally due to the if condition above these matrices are large enough not to require a seperate accumulator variable to prevent false sharing
 			#pragma omp parallel for schedule(static)
 			for(int i=0; i<rows;i++)
 			{
