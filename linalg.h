@@ -436,7 +436,8 @@ class LinAlg
 	template <typename T, size_t cols>
 	double (*ludecompose(const T (*a)[cols], int rows, int& swaps, int* pivot))[cols] 
 	{
-    		auto newArray = make_unique_array<double>(rows * cols);
+			auto newArray = std::make_unique<double[]>(rows * cols);
+    		// auto newArray = make_unique_array<double>(rows * cols);
     		double* res = newArray.get();
     		created_arrays.push_back(std::move(newArray));
     		double (*lu)[cols] = reinterpret_cast<double (*)[cols]>(res);
@@ -549,8 +550,9 @@ class LinAlg
     		double (*lu)[cols] = ludecompose(a, rows, swaps, pivot);
     		if (!lu) 
 			return nullptr;
-
-    		auto newArray = make_unique_array<double>(rows * cols);
+			
+			auto newArray = std::make_unique<double[]>(rows *cols);
+    		//auto newArray = make_unique_array<double>(rows * cols);
     		double* res = newArray.get();
     		created_arrays.push_back(std::move(newArray));
     		double (*inv)[cols] = reinterpret_cast<double (*)[cols]>(res);
