@@ -289,7 +289,7 @@ class LinAlg
 			}
 		} 
 		else {
-			#pragma omp parallel for collapse(2) schedule(static)
+			#pragma omp parallel for schedule(static)
 			for (int ii = 0; ii < rows; ii += blockSize) {
 				for (int jj = 0; jj < cols; jj += blockSize) {
 					for (int i = ii; i < ii + blockSize && i < rows; i++) {
