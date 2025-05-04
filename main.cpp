@@ -198,6 +198,5 @@ int main()
     } else {
         std::cout << "Failed to solve the system.\n";
     }
-	
-    	return 0;
+
 }

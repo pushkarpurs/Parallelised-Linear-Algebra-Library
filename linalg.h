@@ -771,5 +771,45 @@ class LinAlg
 		return true;
 	}
 
+	template <typename T>
+	int rank(std::vector<std::vector<T>> matrix) {
+		int rows = matrix.size();
+		if (rows == 0) return 0;
+		int cols = matrix[0].size();
+
+		int rank = 0;
+
+		for (int r = 0, c = 0; r < rows && c < cols; ++c) {
+			// Find the pivot row
+			int pivot_row = r;
+			for (int i = r + 1; i < rows; ++i) {
+				if (std::abs(matrix[i][c]) > std::abs(matrix[pivot_row][c]))
+					pivot_row = i;
+			}
+
+			// If the pivot is zero, skip this column
+			if (std::abs(matrix[pivot_row][c]) < 1e-9)
+				continue;
+
+			// Swap current row with pivot row
+			if (pivot_row != r)
+				std::swap(matrix[r], matrix[pivot_row]);
+
+			// Eliminate below using parallelism
+			#pragma omp parallel for
+			for (int i = r + 1; i < rows; ++i) {
+				double f = matrix[i][c] / matrix[r][c];
+				for (int j = c; j < cols; ++j)
+					matrix[i][j] -= f * matrix[r][j];
+			}
+
+			++rank;
+			++r;
+		}
+
+		return rank;
+}
+
+
 };
 #endif

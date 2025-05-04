@@ -16,3 +16,5 @@ g++ main.cpp -fopenmp
 12. ludecompose (in-place) 
 13. determinant  
 14. inverse   
+15. Solving System of Linear of Equations using Gaussian Elimination
+16. Finding Rank of the Matrix
