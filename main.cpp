@@ -199,6 +199,21 @@ int main()
         std::cout << "Failed to solve the system.\n";
     }
 
+	std::cout << "\nRank of the matrix:\n";
+
+	// Example matrix with rank 3
+
+	std::vector<std::vector<double>> A_rank = {
+        {1, 2, 3},
+        {4, 5, 6},
+        {7, 8, 10}  // Linearly independent rows => rank 3
+    };
+
+    int r = linalg.rank(A_rank);
+    std::cout << "Rank of the matrix: " << r << std::endl;
+
+    return 0;
+
 		
 
 
