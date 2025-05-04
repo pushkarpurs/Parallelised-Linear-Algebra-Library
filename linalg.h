@@ -728,5 +728,48 @@ class LinAlg
 		return eigenvalues;
 	}
 
+	template <typename T>
+	bool solveLinearSystem(std::vector<std::vector<T>>& A, std::vector<T>& b,
+						   std::vector<T>& x) {
+		const int n = A.size();
+		x.resize(n);
+	
+		for (int i = 0; i < n; ++i) {
+			// Pivoting
+			int maxRow = i;
+			for (int k = i + 1; k < n; ++k) {
+				if (std::fabs(static_cast<double>(A[k][i])) > std::fabs(static_cast<double>(A[maxRow][i])))
+					maxRow = k;
+			}
+	
+			if (std::fabs(static_cast<double>(A[maxRow][i])) < 1e-12) {
+				std::cerr << "Matrix is singular or nearly singular!\n";
+				return false;
+			}
+	
+			std::swap(A[i], A[maxRow]);
+			std::swap(b[i], b[maxRow]);
+	
+			// Eliminate rows below
+			#pragma omp parallel for
+			for (int k = i + 1; k < n; ++k) {
+				T factor = A[k][i] / A[i][i];
+				for (int j = i; j < n; ++j)
+					A[k][j] -= factor * A[i][j];
+				b[k] -= factor * b[i];
+			}
+		}
+	
+		// Back substitution
+		for (int i = n - 1; i >= 0; --i) {
+			x[i] = b[i];
+			for (int j = i + 1; j < n; ++j)
+				x[i] -= A[i][j] * x[j];
+			x[i] /= A[i][i];
+		}
+	
+		return true;
+	}
+
 };
 #endif

@@ -178,7 +178,26 @@ int main()
     	for (int i=0; i<3; i++) 
 	{
         	std::cout << std::fixed << std::setprecision(10) << eigenvalues[i] << "\n";
-    	}
+    }
+	
+	std::cout << "\nSolving Ax = b using Gaussian Elimination:\n";
+
+    std::vector<std::vector<double>> A_sys = {
+        {3,4},
+        {3,3}
+    };
+
+    std::vector<double> b_sys = {2, 3};
+    std::vector<double> x;
+
+    if (linalg.solveLinearSystem(A_sys, b_sys, x)) {
+        std::cout << "Solution Vector x:\n";
+        for (const auto& xi : x)
+            std::cout << std::fixed << std::setprecision(6) << xi << " ";
+        std::cout << "\n";
+    } else {
+        std::cout << "Failed to solve the system.\n";
+    }
 	
     	return 0;
 }
