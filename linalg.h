@@ -1,5 +1,7 @@
 #ifndef LINALGLIB_H
 #define LINALGLIB_H
+#define SIMD_Size 64
+
 
 #include <vector>
 #include <memory>
@@ -35,7 +37,7 @@ class LinAlg
 		//Uncecessary to spawn threads for smaller matrices. Threading overhead dominates and SIMD is better
 		//Note SIMD is an intra processor instruction. Bascially a vector instruction, but omp paralell is inter processor spawning multiple threads
 		
-		if(rows*cols <=256)
+		if(rows*cols <=SIMD_Size)
 		{
 			for(int i=0; i<rows;i++)
 			{
@@ -66,7 +68,7 @@ class LinAlg
 	double dot(const  T1* a, const T2* b, int rows)
 	{	
 		double s=0.0;
-		if(rows<=256)
+		if(rows<=SIMD_Size)
 		{
 			#pragma omp simd
 			for(int i=0; i<rows; i++)
@@ -94,7 +96,7 @@ class LinAlg
 		
 		double (*resultptr)[colsb] = reinterpret_cast<double (*)[colsb]>(res);
 		
-		if(rowsa*colsb <= 64) 
+		if(rowsa*colsb <=SIMD_Size) 
 		{
 		    for(int i = 0; i < rowsa; i++) 
 			{
@@ -135,7 +137,7 @@ class LinAlg
 		
 		double (*idptr)[cols] = reinterpret_cast<double (*)[cols]>(res);
 		
-		if (cols <= 16) 
+		if (cols*cols <=SIMD_Size) 
 		{  
 			for (int i = 0; i < cols; i++) 
 			{
@@ -176,7 +178,7 @@ class LinAlg
         created_arrays.push_back(std::move(newArray));
 		double (*cpy)[cols] = reinterpret_cast<double (*)[cols]>(res);
 		
-		if(rows*cols <=256)
+		if(rows*cols <=SIMD_Size)
 		{
 			for(int i=0; i<rows;i++)
 			{
@@ -245,7 +247,7 @@ class LinAlg
 		
 		double (*opr)[rows] = reinterpret_cast<double (*)[rows]>(res);
 		
-		if(rows*rows <= 256) 
+		if(rows*rows <= SIMD_Size) 
 		{
 		    for(int i = 0; i < rows; i++) 
 			{
@@ -281,7 +283,7 @@ class LinAlg
 		
 		int blockSize = 32;
 
-		if (rows * cols <= 256) {
+		if (rows * cols <= SIMD_Size) {
 			for (int i = 0; i < rows; i++) {
 				#pragma omp simd
 				for (int j = 0; j < cols; j++) {
@@ -315,7 +317,7 @@ class LinAlg
         double* vecm = newArray.get();
         created_arrays.push_back(std::move(newArray));
 		
-		if (rows * cols < 256)
+		if (rows * cols < SIMD_Size)
 		{
 			for (int j = 0; j < rows; j++)
 			{
@@ -365,7 +367,7 @@ class LinAlg
         double* matv = newArray.get();
         created_arrays.push_back(std::move(newArray));
 		
-		if (rows * cols < 256)
+		if (rows * cols < SIMD_Size)
 		{
 			for (int j = 0; j < rows; j++)
 			{
@@ -709,7 +711,7 @@ class LinAlg
     		}
 
     		std::vector<double> eigenvalues(rows);
-    		if(rows<=16)
+    		if(rows*rows<=SIMD_Size)
 		{
         		#pragma omp simd
     			for (size_t i = 0; i < rows; ++i) 
