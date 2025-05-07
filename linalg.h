@@ -50,7 +50,7 @@ class LinAlg
 		}
 		else
 		{
-			#pragma omp parallel for simd schedule(static)
+			#pragma omp parallel for schedule(static)
 			for(int i=0; i<rows;i++)
 			{
 				#pragma omp simd
@@ -112,7 +112,7 @@ class LinAlg
 		}
 		else 
 		{
-		    #pragma omp parallel for simd collapse(2) schedule(static)
+		    #pragma omp parallel for collapse(2) schedule(static)
 		   	for(int i = 0; i < rowsa; i++) 
 			{
 				for(int j = 0; j < colsb; j++) 
@@ -153,7 +153,7 @@ class LinAlg
 		} 
 		else 
 		{  
-			#pragma omp parallel for simd schedule(static)
+			#pragma omp parallel for schedule(static)
 			for (int i = 0; i < cols; i++) 
 			{
 				#pragma omp simd
@@ -192,7 +192,7 @@ class LinAlg
 		else
 		{
 			// Note: Generally due to the if condition above these matrices are large enough not to require a seperate accumulator variable to prevent false sharing
-			#pragma omp parallel for simd schedule(static)
+			#pragma omp parallel for schedule(static)
 			for(int i=0; i<rows;i++)
 			{
 				#pragma omp simd
@@ -260,7 +260,7 @@ class LinAlg
 		}
 		else 
 		{
-		    #pragma omp parallel for simd schedule(static)
+		    #pragma omp parallel for schedule(static)
 		   	for(int i = 0; i < rows; i++) 
 			{
 				#pragma omp simd
@@ -293,7 +293,7 @@ class LinAlg
 		} 
 		else {
 			// Tiling
-			#pragma omp parallel for simd schedule(static)
+			#pragma omp parallel for schedule(static)
 			for (int ii = 0; ii < rows; ii += blockSize) {
 				for (int jj = 0; jj < cols; jj += blockSize) {
 					for (int i = ii; i < ii + blockSize && i < rows; i++) {
@@ -413,7 +413,7 @@ class LinAlg
 	double (*cholesky(const T (*a)[cols]))[cols]
 	{
 		std::atomic<bool> r{false};
-		#pragma omp parallel for simd schedule(static) shared(r)
+		#pragma omp parallel for schedule(static) shared(r)
 		for(int i=0; i<cols; i++)
 		{
 			if(r.load())
