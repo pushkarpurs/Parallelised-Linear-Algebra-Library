@@ -50,7 +50,7 @@ class LinAlg
 		}
 		else
 		{
-			#pragma omp parallel for schedule(static)
+			#pragma omp parallel for simd schedule(static)
 			for(int i=0; i<rows;i++)
 			{
 				#pragma omp simd
@@ -78,7 +78,7 @@ class LinAlg
 		}
 		else
 		{
-			#pragma omp parallel for reduction(+:s) schedule(static)
+			#pragma omp parallel for simd reduction(+:s) schedule(static)
 			for(int i=0; i<rows; i++)
 			{
 				s+=a[i]*b[i];
@@ -112,7 +112,7 @@ class LinAlg
 		}
 		else 
 		{
-		    #pragma omp parallel for collapse(2) schedule(static)
+		    #pragma omp parallel for simd collapse(2) schedule(static)
 		   	for(int i = 0; i < rowsa; i++) 
 			{
 				for(int j = 0; j < colsb; j++) 
@@ -153,7 +153,7 @@ class LinAlg
 		} 
 		else 
 		{  
-			#pragma omp parallel for schedule(static)
+			#pragma omp parallel for simd schedule(static)
 			for (int i = 0; i < cols; i++) 
 			{
 				#pragma omp simd
@@ -192,7 +192,7 @@ class LinAlg
 		else
 		{
 			// Note: Generally due to the if condition above these matrices are large enough not to require a seperate accumulator variable to prevent false sharing
-			#pragma omp parallel for schedule(static)
+			#pragma omp parallel for simd schedule(static)
 			for(int i=0; i<rows;i++)
 			{
 				#pragma omp simd
@@ -260,7 +260,7 @@ class LinAlg
 		}
 		else 
 		{
-		    #pragma omp parallel for schedule(static)
+		    #pragma omp parallel for simd schedule(static)
 		   	for(int i = 0; i < rows; i++) 
 			{
 				#pragma omp simd
@@ -293,7 +293,7 @@ class LinAlg
 		} 
 		else {
 			// Tiling
-			#pragma omp parallel for schedule(static)
+			#pragma omp parallel for simd schedule(static)
 			for (int ii = 0; ii < rows; ii += blockSize) {
 				for (int jj = 0; jj < cols; jj += blockSize) {
 					for (int i = ii; i < ii + blockSize && i < rows; i++) {
@@ -413,7 +413,7 @@ class LinAlg
 	double (*cholesky(const T (*a)[cols]))[cols]
 	{
 		std::atomic<bool> r{false};
-		#pragma omp parallel for schedule(static) shared(r)
+		#pragma omp parallel for simd schedule(static) shared(r)
 		for(int i=0; i<cols; i++)
 		{
 			if(r.load())
@@ -451,7 +451,7 @@ class LinAlg
 			}
 			L[i][i]=std::sqrt(a[i][i]-sum);
 
-			#pragma omp parallel for
+			#pragma omp parallel for simd
 			for (int j=i+1; j<cols; j++) 
 			{
 				if(r.load())
@@ -490,7 +490,7 @@ class LinAlg
 
     		for (int i = 0; i < rows; ++i) pivot[i] = i;
 
-   	 	#pragma omp parallel for
+   	 	#pragma omp parallel for simd
     		for (int i = 0; i < rows; i++)
 		{
         		for (int j = 0; j < cols; j++)
@@ -525,7 +525,7 @@ class LinAlg
         		}
 
         		double pivot_val = lu[k][k];
-        		#pragma omp parallel for
+        		#pragma omp parallel for simd
         		for (int i = k + 1; i < rows; i++) 
 			{
             			lu[i][k] /= pivot_val;
@@ -552,7 +552,7 @@ class LinAlg
     		}
 
     		double det = 1.0;
-    		#pragma omp parallel for reduction(* : det)
+    		#pragma omp parallel for simd reduction(* : det)
     		for (int i = 0; i < rows; i++) 
 		{
         		det *= lu[i][i];
@@ -603,7 +603,7 @@ class LinAlg
     		created_arrays.push_back(std::move(newArray));
     		double (*inv)[cols] = reinterpret_cast<double (*)[cols]>(res);
 
-    		#pragma omp parallel for
+    		#pragma omp parallel for simd
     		for (int col = 0; col < cols; ++col)
 		{
         		double y[rows], x[rows];
@@ -631,7 +631,7 @@ class LinAlg
 
     		for (int k = 0; k < cols; ++k) 
 		{
-		        #pragma omp parallel for
+		        #pragma omp parallel for simd
         		for (int i = 0; i < rows; ++i)
             			Q[i][k] = a[i][k];
 
@@ -647,7 +647,7 @@ class LinAlg
             			double rjk = dot(Q_col,A_col, rows);
             			R[j][k] = rjk;
 
-            			#pragma omp parallel for
+            			#pragma omp parallel for simd
             			for (int i = 0; i < rows; ++i)
                 			Q[i][k] -= rjk * Q[i][j];
         		}
@@ -659,7 +659,7 @@ class LinAlg
 
         		R[k][k] = std::sqrt(norm);
 
-        		#pragma omp parallel for
+        		#pragma omp parallel for simd
 		        for (int i = 0; i < rows; ++i)
             			Q[i][k] /= R[k][k];
     		}
@@ -671,7 +671,7 @@ class LinAlg
 	bool is_upper_triangular(const T (*A)[cols], double tolerance = 1e-10) 
 	{
 		bool is_upper = true; 
-		#pragma omp parallel for reduction(&:is_upper)
+		#pragma omp parallel for simd reduction(&:is_upper)
     		for (int i = 1; i < cols; ++i) 
 		{
         		for (int j = 0; j < i; ++j) 
@@ -721,7 +721,7 @@ class LinAlg
 		}
 		else
 		{
-    			#pragma omp parallel for schedule(static)
+    			#pragma omp parallel for simd schedule(static)
     			for (size_t i = 0; i < rows; ++i) 
 			{
         			eigenvalues[i]=A_k[i][i];
@@ -753,7 +753,7 @@ class LinAlg
 			std::swap(b[i], b[maxRow]);
 	
 			// Eliminate rows below
-			#pragma omp parallel for
+			#pragma omp parallel for simd
 			for (int k = i + 1; k < n; ++k) {
 				T factor = A[k][i] / A[i][i];
 				for (int j = i; j < n; ++j)
@@ -798,7 +798,7 @@ class LinAlg
 				std::swap(matrix[r], matrix[pivot_row]);
 
 			// Eliminate below using parallelism
-			#pragma omp parallel for
+			#pragma omp parallel for simd
 			for (int i = r + 1; i < rows; ++i) {
 				double f = matrix[i][c] / matrix[r][c];
 				for (int j = c; j < cols; ++j)
