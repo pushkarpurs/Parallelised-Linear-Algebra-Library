@@ -213,10 +213,4 @@ int main()
     std::cout << "Rank of the matrix: " << r << std::endl;
 
     return 0;
-
-		
-
-
-    return 0;
-
 }
